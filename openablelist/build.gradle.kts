@@ -1,6 +1,21 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    `maven-publish`
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "com.theo"
+            artifactId = "openablelist"
+            version = "0.0.0"
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
 
 android {
