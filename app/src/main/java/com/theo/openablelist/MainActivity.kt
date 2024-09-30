@@ -2,7 +2,10 @@ package com.theo.openablelist
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.snackbar.Snackbar
+import com.theo.openablelist.data.Category
 import com.theo.openablelistdemo.databinding.ActivityMainBinding
+import kotlin.random.Random
 
 class MainActivity: AppCompatActivity() {
 
@@ -13,28 +16,35 @@ class MainActivity: AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val adapter = CategoryAdapter()
-        binding.recyclerView.adapter = adapter
-        adapter.setData(makeCategory())
-    }
-
-    private fun makeCategory(): List<Section<String, String>> {
-        return listOf(
-            makeSection("Category#1", 5),
-            makeSection("Category#2", 2),
-            makeSection("Category#3", 3),
-            makeSection("Category#4", 9),
-            makeSection("Category#5", 7),
+        val adapter = CategoryAdapter(
+            categories = makeCategoryByGroup(6),
+            onClickParent = {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_SHORT).show()
+            },
+            onClickChild = {
+                Snackbar.make(binding.root, it, Snackbar.LENGTH_SHORT).show()
+            }
         )
+        binding.recyclerView.itemAnimator = null
+        binding.recyclerView.adapter = adapter
     }
 
-    private fun makeSection(title: String, subCount: Int): Section<String, String> {
-        return Section(
-            data = title,
-            isOpen = true,
-            items = Array(subCount) {
-                "SubCategory#$it"
-            }.toList()
+    private fun makeCategoryByGroup(size: Int): List<Group<String, String>> {
+        val random = Random(size)
+        return List(size) {
+            makeGroup(
+                title = "Category#${it + 1}",
+                subCount = random.nextInt(0, 10)
+            )
+        }
+    }
+
+    private fun makeGroup(title: String, subCount: Int): Group<String, String> {
+        return Category(
+            parent = title,
+            children = List(subCount) {
+                "SubCategory#${it + 1}"
+            }
         )
     }
 }
