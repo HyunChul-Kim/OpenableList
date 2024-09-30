@@ -9,7 +9,7 @@ publishing {
         register<MavenPublication>("release") {
             groupId = "com.theo"
             artifactId = "openablelist"
-            version = "0.0.0"
+            version = "0.0.1"
 
             afterEvaluate {
                 from(components["release"])
