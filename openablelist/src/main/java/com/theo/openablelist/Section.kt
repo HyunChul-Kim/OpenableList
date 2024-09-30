@@ -1,7 +1,8 @@
 package com.theo.openablelist
 
-data class Section<out P, out C>(
-    val data: P,
+
+data class Section<P, C>(
+    val parent: P,
+    val children: List<C>,
     var isOpen: Boolean,
-    val items: List<C>
 )
