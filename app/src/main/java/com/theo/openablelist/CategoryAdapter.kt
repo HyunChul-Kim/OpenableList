@@ -73,7 +73,4 @@ class CategoryAdapter(
         (holder as SubCategoryViewHolder).bind(section.children[childIndex])
     }
 
-    override fun onSectionClicked(position: Int) {
-        onClickParent(getParentItem(position))
-    }
 }
