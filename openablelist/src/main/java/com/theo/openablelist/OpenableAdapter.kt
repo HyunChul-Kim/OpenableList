@@ -3,6 +3,8 @@ package com.theo.openablelist
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
+import com.theo.openablelist.model.Group
+import com.theo.openablelist.model.Section
 
 
 abstract class OpenableAdapter<P, C>(
@@ -70,13 +72,13 @@ abstract class OpenableAdapter<P, C>(
 
     fun getParentItem(position: Int): P {
         val openableItem = manager.findOpenableItem(position)
-        return openableItem.section.parent
+        return openableItem.section.parent.data
     }
 
     fun getChildItem(position: Int): C? {
         val openableItem = manager.findOpenableItem(position)
         if(openableItem.childIndex == -1) return null
-        return openableItem.section.children[openableItem.childIndex]
+        return openableItem.section.children[openableItem.childIndex].data
     }
 
     abstract fun onCreateParentViewHolder(parent: ViewGroup): ParentViewHolder

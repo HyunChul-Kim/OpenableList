@@ -3,6 +3,8 @@ package com.theo.openablelist
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.theo.openablelist.model.Group
+import com.theo.openablelist.model.Section
 import com.theo.openablelist.viewholder.CategoryViewHolder
 import com.theo.openablelist.viewholder.SubCategoryViewHolder
 import com.theo.openablelistdemo.databinding.ViewCategoryChildItemBinding
@@ -43,7 +45,7 @@ class CategoryAdapter(
         holder: RecyclerView.ViewHolder,
         section: Section<String, String>
     ) {
-        (holder as CategoryViewHolder).bind(section.parent)
+        //(holder as CategoryViewHolder).bind(section.parent)
     }
 
     override fun onBindParentViewHolder(
@@ -70,7 +72,7 @@ class CategoryAdapter(
         section: Section<String, String>,
         childIndex: Int
     ) {
-        (holder as SubCategoryViewHolder).bind(section.children[childIndex])
+        //(holder as SubCategoryViewHolder).bind(section.children[childIndex])
     }
 
 }

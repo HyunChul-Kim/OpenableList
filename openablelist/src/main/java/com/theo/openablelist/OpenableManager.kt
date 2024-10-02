@@ -1,10 +1,17 @@
 package com.theo.openablelist
 
-class OpenableManager<P, C>(
+import com.theo.openablelist.model.Child
+import com.theo.openablelist.model.Group
+import com.theo.openablelist.model.OpenableItem
+import com.theo.openablelist.model.Parent
+import com.theo.openablelist.model.Section
+
+internal class OpenableManager<P, C>(
     groups: List<Group<P, C>>,
     private val isOnlyOneSectionOpen: Boolean = false,
     openAllFirst: Boolean,
-    private val firstOpenIndex: Int = NONE,
+    firstOpenIndex: Int = NONE,
+
     private val onSectionClicked: (OpenableEvent, Int, Int) -> Unit
 ) {
 
@@ -17,18 +24,18 @@ class OpenableManager<P, C>(
         Section(
             parent = group.parent,
             children = group.children,
-            isOpen = isOpenAllFirst || firstOpenIndex == index,
+            isOpened = isOpenAllFirst || firstOpenIndex == index,
         )
     }
-    val itemCount: Int get() = sections.fold(0) { total, parent ->
-        if(parent.isOpen) {
-            total + parent.children.size + 1
+    val itemCount: Int get() = sections.fold(0) { total, section ->
+        if(section.isOpened) {
+            total + section.children.size + 1
         } else {
             total + 1
         }
     }
 
-    private var openedSectionIndex: Int = NONE
+    private var openedSectionIndex: Int = firstOpenIndex
     private val isExistsOpenedSection: Boolean get() = openedSectionIndex != NONE
 
     private fun expand(section: Section<P, C>) {
@@ -38,37 +45,37 @@ class OpenableManager<P, C>(
             }
             openedSectionIndex = sections.indexOf(section)
         }
-        section.isOpen = true
-        val realIndex = findRealIndex(section)
-        onSectionClicked(OpenableEvent.OPEN, realIndex, section.children.size)
+        section.isOpened = true
+        val position = findAdapterPosition(section)
+        onSectionClicked(OpenableEvent.OPEN, position, section.children.size)
     }
 
     private fun collapse(section: Section<P, C>) {
         if(isOnlyOneSectionOpen) {
             openedSectionIndex = NONE
         }
-        section.isOpen = false
-        val realIndex = findRealIndex(section)
-        onSectionClicked(OpenableEvent.CLOSE, realIndex, section.children.size)
+        section.isOpened = false
+        val position = findAdapterPosition(section)
+        onSectionClicked(OpenableEvent.CLOSE, position, section.children.size)
     }
 
     fun toggle(position: Int) {
         val openableItem = findOpenableItem(position)
         if(openableItem.type != OpenableType.PARENT) return
-        if(openableItem.section.isOpen) {
+        if(openableItem.section.isOpened) {
             collapse(openableItem.section)
         } else {
             expand(openableItem.section)
         }
     }
 
-    private fun findRealIndex(section: Section<P, C>): Int {
+    private fun findAdapterPosition(section: Section<P, C>): Int {
         val sectionIndex = sections.indexOf(section)
-        var realIndex = 0
+        var position = 0
         for(i in 0 until sectionIndex) {
-            realIndex += getVisibleItemCount(i)
+            position += getVisibleItemCount(i)
         }
-        return realIndex
+        return position
     }
 
     fun findOpenableItem(position: Int): OpenableItem<P, C> {
@@ -86,7 +93,7 @@ class OpenableManager<P, C>(
     }
 
     private fun getVisibleItemCount(sectionIndex: Int): Int {
-        return if(sections[sectionIndex].isOpen) {
+        return if(sections[sectionIndex].isOpened) {
             sections[sectionIndex].children.size + 1
         } else {
             1
