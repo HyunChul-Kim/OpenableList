@@ -44,6 +44,9 @@ class OpenableManager<P, C>(
     }
 
     private fun collapse(section: Section<P, C>) {
+        if(isOnlyOneSectionOpen) {
+            openedSectionIndex = NONE
+        }
         section.isOpen = false
         val realIndex = findRealIndex(section)
         onSectionClicked(OpenableEvent.CLOSE, realIndex, section.children.size)
@@ -51,12 +54,11 @@ class OpenableManager<P, C>(
 
     fun toggle(position: Int) {
         val openableItem = findOpenableItem(position)
-        if(openableItem.type == OpenableType.PARENT) {
-            if(openableItem.section.isOpen) {
-                collapse(openableItem.section)
-            } else {
-                expand(openableItem.section)
-            }
+        if(openableItem.type != OpenableType.PARENT) return
+        if(openableItem.section.isOpen) {
+            collapse(openableItem.section)
+        } else {
+            expand(openableItem.section)
         }
     }
 
