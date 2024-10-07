@@ -1,105 +1,182 @@
 package com.theo.openablelist
 
 import android.view.ViewGroup
-import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
-import com.theo.openablelist.model.Group
+import com.theo.openablelist.model.Child
+import com.theo.openablelist.viewholder.OpenableViewHolder
+import com.theo.openablelist.model.OpenableItem
+import com.theo.openablelist.model.Parent
 import com.theo.openablelist.model.Section
 
-
 abstract class OpenableAdapter<P, C>(
-    groups: List<Group<P, C>>,
-    isOnlyOneSectionOpen: Boolean = false,
-    isOpenAllFirst: Boolean = false,
-    firstOpenIndex: Int = -1
-): RecyclerView.Adapter<ViewHolder>() {
+    private val sectionList: List<Section<P, C>>,
+    private val isOnlyOneSelectParent: Boolean = true,
+    private val isOnlyOneSelectChild: Boolean = true
+): ListAdapter<OpenableItem<P, C>, OpenableViewHolder>(OpenableItemCallback()) {
 
-    private val manager = OpenableManager(
-        groups = groups,
-        isOnlyOneSectionOpen = isOnlyOneSectionOpen,
-        openAllFirst = isOpenAllFirst,
-        firstOpenIndex = firstOpenIndex
-    ) { event, index, count ->
-        when(event) {
-            OpenableEvent.OPEN -> {
-                notifyItemChanged(index, PAYLOAD_PARENT_OPEN)
-                notifyItemRangeInserted(index + 1, count)
+    private var sections = sectionList.flatMap {
+        listOf(
+            OpenableItem<P, C>(
+                parent = it.parent,
+                type = OpenableType.PARENT
+            )
+        ) + if(it.isOpened) {
+            it.children.map { child ->
+                OpenableItem<P, C>(
+                    child = child,
+                    type = OpenableType.CHILD
+                )
             }
-            OpenableEvent.CLOSE -> {
-                notifyItemChanged(index, PAYLOAD_PARENT_CLOSE)
-                notifyItemRangeRemoved(index + 1, count)
+        } else {
+            emptyList()
+        }
+    }
+    private var selectedParentKey: String = ""
+    private val selectedChildKeys: MutableList<String> = mutableListOf()
+
+    fun update() {
+        submitList(sections)
+    }
+
+    private fun updateSelections(item: OpenableItem<P, C>) {
+        sections = when(item.type) {
+            OpenableType.PARENT -> {
+                sectionList.flatMap {
+                    it.parent.isOpened = if(it.parent.key == item.parent?.key) {
+                        !it.parent.isOpened
+                    } else if(isOnlyOneSelectChild) {
+                        false
+                    } else {
+                        it.parent.isOpened
+                    }
+                    listOf(
+                        OpenableItem<P, C>(
+                            parent = it.parent,
+                            type = OpenableType.PARENT
+                        )
+                    ) + if(it.parent.isOpened) {
+                        it.children.map { child ->
+                            OpenableItem<P, C>(
+                                child = child.copy(
+                                    isSelected = isChildSelected(child.key)
+                                ),
+                                type = OpenableType.CHILD
+                            )
+                        }
+                    } else {
+                        emptyList()
+                    }
+                }
+            }
+            OpenableType.CHILD -> {
+                sectionList.flatMap {
+                    listOf(
+                        OpenableItem<P, C>(
+                            parent = it.parent,
+                            type = OpenableType.PARENT
+                        )
+                    ) + if(it.parent.isOpened) {
+                        it.children.map { child ->
+                            OpenableItem<P, C>(
+                                child = child.copy(
+                                    isSelected = isChildSelected(child.key, item.child?.key)
+                                ),
+                                type = OpenableType.CHILD
+                            )
+                        }
+                    } else {
+                        emptyList()
+                    }
+                }
+            }
+        }
+        update()
+    }
+
+    private fun isChildSelected(key: String) = selectedChildKeys.contains(key)
+
+    private fun isChildSelected(key: String, selectedKey: String?): Boolean {
+        return if(key == selectedKey) {
+            if(selectedChildKeys.contains(key)) {
+                selectedChildKeys.remove(key)
+                false
+            } else {
+                if(isOnlyOneSelectChild) {
+                    selectedChildKeys.clear()
+                }
+                selectedChildKeys.add(key)
+                true
+            }
+        } else {
+            if(isOnlyOneSelectChild) {
+                selectedChildKeys.remove(key)
+                false
+            } else {
+                selectedChildKeys.contains(key)
             }
         }
     }
 
-    final override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OpenableViewHolder {
         return when(viewType) {
             OpenableType.PARENT.value -> {
                 onCreateParentViewHolder(parent).apply {
-                    toggle = { position ->
-                        manager.toggle(position)
+                    internalOnClick = { position ->
+                        selectedParentKey = sections[position].parent?.key ?: ""
+                        updateSelections(sections[position])
                     }
                 }
             }
-            OpenableType.CHILD.value -> onCreateChildViewHolder(parent)
+            OpenableType.CHILD.value -> {
+                onCreateChildViewHolder(parent).apply {
+                    internalOnClick = { position ->
+                        updateSelections(sections[position])
+                    }
+                }
+            }
             else -> throw IllegalArgumentException("Undefined view type")
         }
     }
 
-    final override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val openableItem = manager.findOpenableItem(position)
-        when(openableItem.type) {
-            OpenableType.PARENT -> onBindParentViewHolder(holder, openableItem.section)
-            OpenableType.CHILD -> onBindChildViewHolder(holder, openableItem.section, openableItem.childIndex)
+    override fun onBindViewHolder(
+        holder: OpenableViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        val item = sections[position]
+        when(item.type) {
+            OpenableType.PARENT -> onBindParentViewHolder(holder, item.parent!!, payloads)
+            OpenableType.CHILD -> onBindChildViewHolder(holder, item.child!!, payloads)
         }
     }
 
-    final override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
-        val openableItem = manager.findOpenableItem(position)
-        when(openableItem.type) {
-            OpenableType.PARENT -> onBindParentViewHolder(holder, openableItem.section, payloads)
-            OpenableType.CHILD -> onBindChildViewHolder(holder, openableItem.section, openableItem.childIndex, payloads)
+    override fun onBindViewHolder(holder: OpenableViewHolder, position: Int) {
+        val item = sections[position]
+        when(item.type) {
+            OpenableType.PARENT -> onBindParentViewHolder(holder, item.parent!!)
+            OpenableType.CHILD -> onBindChildViewHolder(holder, item.child!!)
         }
     }
 
-    final override fun getItemCount(): Int {
-        return manager.itemCount
+    override fun getItemViewType(position: Int): Int {
+        return sections[position].type.value
     }
 
-    final override fun getItemViewType(position: Int): Int {
-        return manager.findOpenableItem(position).type.value
+    abstract fun onCreateParentViewHolder(parent: ViewGroup): OpenableViewHolder
+
+    abstract fun onCreateChildViewHolder(parent: ViewGroup): OpenableViewHolder
+
+    abstract fun onBindParentViewHolder(holder: ViewHolder, item: Parent<P>)
+
+    open fun onBindParentViewHolder(holder: ViewHolder, item: Parent<P>, payloads: MutableList<Any>) {
+        onBindParentViewHolder(holder, item)
     }
 
-    fun getParentItem(position: Int): P {
-        val openableItem = manager.findOpenableItem(position)
-        return openableItem.section.parent.data
+    abstract fun onBindChildViewHolder(holder: ViewHolder, item: Child<C>)
+
+    open fun onBindChildViewHolder(holder: ViewHolder, item: Child<C>, payloads: MutableList<Any>) {
+        onBindChildViewHolder(holder, item)
     }
 
-    fun getChildItem(position: Int): C? {
-        val openableItem = manager.findOpenableItem(position)
-        if(openableItem.childIndex == -1) return null
-        return openableItem.section.children[openableItem.childIndex].data
-    }
-
-    abstract fun onCreateParentViewHolder(parent: ViewGroup): ParentViewHolder
-
-    abstract fun onCreateChildViewHolder(parent: ViewGroup): ViewHolder
-
-    abstract fun onBindParentViewHolder(holder: ViewHolder, section: Section<P, C>)
-
-    abstract fun onBindChildViewHolder(holder: ViewHolder, section: Section<P, C>, childIndex: Int)
-
-    open fun onBindParentViewHolder(holder: ViewHolder, section: Section<P, C>, payloads: MutableList<Any>) {
-        onBindParentViewHolder(holder, section)
-    }
-
-    open fun onBindChildViewHolder(holder: ViewHolder, section: Section<P, C>, childIndex: Int, payloads: MutableList<Any>) {
-        onBindChildViewHolder(holder, section, childIndex)
-    }
-
-    companion object {
-        private const val TAG = "OpenableAdapter"
-        const val PAYLOAD_PARENT_OPEN = 0
-        const val PAYLOAD_PARENT_CLOSE = 1
-    }
 }

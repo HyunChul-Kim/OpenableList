@@ -1,10 +1,10 @@
 package com.theo.openablelist
 
 import androidx.recyclerview.widget.DiffUtil
-import com.theo.openablelist.model.OpenableItem2
+import com.theo.openablelist.model.OpenableItem
 
-class OpenableItemCallback<P, C>: DiffUtil.ItemCallback<OpenableItem2<P, C>>() {
-    override fun areItemsTheSame(oldItem: OpenableItem2<P, C>, newItem: OpenableItem2<P, C>): Boolean {
+class OpenableItemCallback<P, C>: DiffUtil.ItemCallback<OpenableItem<P, C>>() {
+    override fun areItemsTheSame(oldItem: OpenableItem<P, C>, newItem: OpenableItem<P, C>): Boolean {
         if(oldItem.type == newItem.type) {
             return when(oldItem.type) {
                 OpenableType.PARENT -> {
@@ -19,7 +19,7 @@ class OpenableItemCallback<P, C>: DiffUtil.ItemCallback<OpenableItem2<P, C>>() {
         return false
     }
 
-    override fun areContentsTheSame(oldItem: OpenableItem2<P, C>, newItem: OpenableItem2<P, C>): Boolean {
+    override fun areContentsTheSame(oldItem: OpenableItem<P, C>, newItem: OpenableItem<P, C>): Boolean {
         if(oldItem.type == newItem.type) {
             return when(oldItem.type) {
                 OpenableType.PARENT -> {
@@ -35,8 +35,8 @@ class OpenableItemCallback<P, C>: DiffUtil.ItemCallback<OpenableItem2<P, C>>() {
     }
 
     override fun getChangePayload(
-        oldItem: OpenableItem2<P, C>,
-        newItem: OpenableItem2<P, C>
+        oldItem: OpenableItem<P, C>,
+        newItem: OpenableItem<P, C>
     ): Any? {
         if(oldItem.type == newItem.type) {
             return when(oldItem.type) {

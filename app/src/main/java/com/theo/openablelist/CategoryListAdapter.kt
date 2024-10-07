@@ -14,7 +14,7 @@ import com.theo.openablelistdemo.databinding.ViewCategoryParentItemBinding
 
 class CategoryListAdapter(
     categories: List<Section<String, String>>
-): OpenableAdapter2<String, String>(categories) {
+): OpenableAdapter<String, String>(categories) {
 
     override fun onCreateParentViewHolder(parent: ViewGroup): OpenableViewHolder {
         return CategoryParentViewHolder(

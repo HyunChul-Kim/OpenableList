@@ -1,6 +1,5 @@
 package com.theo.openablelist.viewholder
 
-import com.theo.openablelist.ParentViewHolder
 import com.theo.openablelistdemo.databinding.ViewCategoryParentItemBinding
 
 class CategoryParentViewHolder(
