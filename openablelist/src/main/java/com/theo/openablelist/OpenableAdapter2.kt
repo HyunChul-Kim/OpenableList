@@ -33,6 +33,7 @@ abstract class OpenableAdapter2<P, C>(
         }
     }
     private var selectedParentKey: String = ""
+    private val selectedChildKeys: MutableList<String> = mutableListOf()
 
     fun update() {
         submitList(sections)
@@ -42,24 +43,24 @@ abstract class OpenableAdapter2<P, C>(
         sections = when(item.type) {
             OpenableType.PARENT -> {
                 sectionList.flatMap {
-                    val newParent = it.parent.copy(
-                        isOpened = if(it.parent.key == item.parent?.key) {
-                            !it.parent.isOpened
-                        } else if(isOnlyOneSelectChild) {
-                            false
-                        } else {
-                            it.parent.isOpened
-                        }
-                    )
+                    it.parent.isOpened = if(it.parent.key == item.parent?.key) {
+                        !it.parent.isOpened
+                    } else if(isOnlyOneSelectChild) {
+                        false
+                    } else {
+                        it.parent.isOpened
+                    }
                     listOf(
                         OpenableItem2<P, C>(
-                            parent = newParent,
+                            parent = it.parent,
                             type = OpenableType.PARENT
                         )
-                    ) + if(newParent.isOpened) {
+                    ) + if(it.parent.isOpened) {
                         it.children.map { child ->
                             OpenableItem2<P, C>(
-                                child = child,
+                                child = child.copy(
+                                    isSelected = isChildSelected(child.key)
+                                ),
                                 type = OpenableType.CHILD
                             )
                         }
@@ -79,13 +80,7 @@ abstract class OpenableAdapter2<P, C>(
                         it.children.map { child ->
                             OpenableItem2<P, C>(
                                 child = child.copy(
-                                    isSelected = if(child.key == item.child?.key) {
-                                        !child.isSelected
-                                    } else if(isOnlyOneSelectChild) {
-                                        false
-                                    } else {
-                                        child.isSelected
-                                    }
+                                    isSelected = isChildSelected(child.key, item.child?.key)
                                 ),
                                 type = OpenableType.CHILD
                             )
@@ -97,6 +92,30 @@ abstract class OpenableAdapter2<P, C>(
             }
         }
         update()
+    }
+
+    private fun isChildSelected(key: String) = selectedChildKeys.contains(key)
+
+    private fun isChildSelected(key: String, selectedKey: String?): Boolean {
+        return if(key == selectedKey) {
+            if(selectedChildKeys.contains(key)) {
+                selectedChildKeys.remove(key)
+                false
+            } else {
+                if(isOnlyOneSelectChild) {
+                    selectedChildKeys.clear()
+                }
+                selectedChildKeys.add(key)
+                true
+            }
+        } else {
+            if(isOnlyOneSelectChild) {
+                selectedChildKeys.remove(key)
+                false
+            } else {
+                selectedChildKeys.contains(key)
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OpenableViewHolder {

@@ -9,8 +9,9 @@ class CategoryChildViewHolder(
     onClick: (String) -> Unit
 ): OpenableViewHolder(binding.root) {
 
-    fun bind(title: String) {
+    fun bind(title: String, isSelected: Boolean) {
         binding.root.text = title
+        updateSelect(isSelected)
     }
 
     fun updateSelect(isSelected: Boolean) {

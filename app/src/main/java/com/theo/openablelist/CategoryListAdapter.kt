@@ -81,7 +81,7 @@ class CategoryListAdapter(
     }
 
     override fun onBindChildViewHolder(holder: RecyclerView.ViewHolder, item: Child<String>) {
-        (holder as CategoryChildViewHolder).bind(item.data)
+        (holder as CategoryChildViewHolder).bind(item.data, item.isSelected)
     }
 
     override fun onBindParentViewHolder(holder: RecyclerView.ViewHolder, item: Parent<String>) {
